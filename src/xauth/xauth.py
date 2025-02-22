@@ -96,8 +96,7 @@ class XAuth:
 
     def start_auth_server(self):
         """Start the Flask server for authentication."""
-        print("Starting auth server at http://localhost:5000")
-        print("Visit http://localhost:5000 to authenticate.")
+        print("Visit http://localhost:5000 to authorize your app.")
         self.app.run(host="0.0.0.0", port=5000)
 
     def _refresh_token(self):
