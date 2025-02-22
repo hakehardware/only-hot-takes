@@ -9,11 +9,14 @@ This repository provides an example of how to authenticate with X (formerly Twit
 - Store and retrieve authentication tokens
 - Send authenticated requests to X API
 
+## X API Limits
+The free tier of X API is extremely limited and only allows 17 posts per day, and 500 posts per month per app. Make sure to implement rate controls and test your code locally.
+
 ## Prerequisites
 
 Ensure you have the following installed on your system:
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - `git` (optional, for cloning the repository)
 - A registered X API developer account with client credentials
 
@@ -62,11 +65,11 @@ cp .env.example .env
 Edit the `.env` file and add your X API credentials:
 
 ```ini
-X_CLIENT_ID="YOUR CLIENT ID"
-X_CLIENT_SECRET="YOUR CLIENT SECRET"
+X_ACCESS_TOKEN="YOUR APP'S ACCESS TOKEN"
+X_SECRET="YOUR APP'S SECRET"
 ```
 
-You must also set the callback URL to be `http://localhost:5000/oauth/callback
+You must also set the callback URL to be `http://localhost:5000/oauth/callback`
 
 ### 5. Run the Authentication Script
 

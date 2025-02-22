@@ -8,6 +8,8 @@ from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 from flask import Flask, request, redirect, session
 from src.db.db import DB
+from logger import logger
+
 
 X_REDIRECT_URI = "http://localhost:5000/oauth/callback"
 X_AUTH_URL = "https://twitter.com/i/oauth2/authorize"
@@ -19,8 +21,8 @@ class XAuth:
     def __init__(self):
         # Load environment variables
         load_dotenv()
-        self.client_id = os.getenv("X_CLIENT_ID")
-        self.client_secret = os.getenv("X_CLIENT_SECRET")
+        self.access_token = os.getenv("X_ACCESS_TOKEN")
+        self.secret = os.getenv("X_SECRET")
         self.redirect_uri = X_REDIRECT_URI
 
         # X API endpoints and scopes
@@ -39,7 +41,7 @@ class XAuth:
     def _make_oauth_session(self):
         """Create an OAuth2Session instance."""
         return OAuth2Session(
-            client_id=self.client_id,
+            client_id=self.access_token,
             redirect_uri=self.redirect_uri,
             scope=self.scopes
         )
@@ -78,7 +80,7 @@ class XAuth:
             oauth = self._make_oauth_session()
             token = oauth.fetch_token(
                 self.token_url,
-                client_secret=self.client_secret,
+                client_secret=self.secret,
                 code_verifier=session["code_verifier"],
                 code=code
             )
@@ -102,11 +104,12 @@ class XAuth:
         """Refresh the token using the stored refresh token."""
         refresh_token = self.db.get_refresh_token()
         if not refresh_token:
-            print("No refresh token found. User needs to re-authenticate.")
+            logger.info("No refresh token found. User needs to \
+                        re-authenticate.")
             return None
 
         oauth = self._make_oauth_session()
-        oauth.auth = HTTPBasicAuth(self.client_id, self.client_secret)
+        oauth.auth = HTTPBasicAuth(self.access_token, self.secret)
         token = oauth.refresh_token(
             token_url=self.token_url,
             refresh_token=refresh_token
@@ -125,12 +128,13 @@ class XAuth:
         token = self.db.get_token()
 
         if not token:
-            print("No token found in the database. Starting authentication...")
+            logger.info("No token found in the database. \
+                        Starting authentication...")
             self.start_auth_server()
             return None  # User must complete authentication in the browser
 
         if time.time() >= token.get("expires_at", 0):
-            print("Token expired. Refreshing...")
+            logger.info("Token expired. Refreshing...")
             token = self._refresh_token()
 
         return token["access_token"] if token else None

@@ -1,5 +1,6 @@
 import requests
 from src.xauth.xauth import XAuth
+from logger import logger
 
 
 class X:
@@ -7,14 +8,15 @@ class X:
         self.xauth = XAuth()
 
     def create_post(self, post):
+        logger.debug("Posting!")
         access_token = None
 
         access_token = self.xauth.get_access_token()
         if not access_token:
-            print("Authentication in progress. Complete it in your browser.")
+            logger.info("Initial auth in progress. \
+                        Complete it in your browser.")
             access_token = self.xauth.get_access_token()
 
-        print("Posting!")
         response = requests.post(
             "https://api.x.com/2/tweets",
             json={"text": post},
