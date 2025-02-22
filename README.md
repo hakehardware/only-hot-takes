@@ -66,37 +66,22 @@ X_CLIENT_ID="YOUR CLIENT ID"
 X_CLIENT_SECRET="YOUR CLIENT SECRET"
 ```
 
-You must also set the callback URL to be `http://localhost:5000/oath
+You must also set the callback URL to be `http://localhost:5000/oauth/callback
 
 ### 5. Run the Authentication Script
 
 To test authentication with X:
 
 ```sh
-python xauth.py
+python example.py
 ```
+You must navigate to `http://localhost:5000` in order to authorize the app manually. This only needs to be done once as the access token and refresh token will be stored in the database and refereshed automatically.
 
-If authentication is successful, it will display an access token.
-
-### 6. Post a Tweet (Example Usage)
-
-```sh
-python xpost.py "Hello, X API!"
-```
-
-This will send a tweet with the provided message.
-
-## Database Configuration
-
-If your project interacts with a database:
-
-- Ensure you have SQLite or another supported database installed.
-- Modify `db.py` with your database connection details.
-- Run database migrations if required.
+If everything worked, you should get a sucess message in the browser, and the post should be visable on the account which approved the app.
 
 ## Logging and Debugging
 
-Enable logging for better visibility of API requests and responses. Modify `logging` settings in the script to output detailed logs for debugging.
+Enable logging for better visibility of API requests and responses. Modify `logging` settings in the script to output detailed logs for debugging. DEBUG should be helpful for testing, and INFO for less verbose logging.
 
 ## Security Considerations
 

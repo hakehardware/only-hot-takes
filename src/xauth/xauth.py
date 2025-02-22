@@ -138,7 +138,3 @@ class XAuth:
     def is_token_valid(self):
         """Check if the current token is valid."""
         return self.db.is_token_valid()
-
-
-if __name__ == "__main__":
-    xauth = XAuth()
