@@ -66,6 +66,8 @@ X_CLIENT_ID="YOUR CLIENT ID"
 X_CLIENT_SECRET="YOUR CLIENT SECRET"
 ```
 
+You must also set the callback URL to be `http://localhost:5000/oath
+
 ### 5. Run the Authentication Script
 
 To test authentication with X:

@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from flask import Flask, request, redirect, session
 from db import DB
 
-X_REDIRECT_URI = "http://127.0.0.1:5000/oauth/callback"
+X_REDIRECT_URI = "http://localhost:5000/oauth/callback"
 X_AUTH_URL = "https://twitter.com/i/oauth2/authorize"
 X_TOKEN_URL = "https://api.x.com/2/oauth2/token"
 X_SCOPES = ["tweet.read", "users.read", "tweet.write", "offline.access"]

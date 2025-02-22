@@ -12,7 +12,9 @@ class X:
         access_token = self.xauth.get_access_token()
         if not access_token:
             print("Authentication in progress. Complete it in your browser.")
-        
+            access_token = self.xauth.get_access_token()
+
+        print("Posting!")
         response = requests.post(
             "https://api.x.com/2/tweets",
             json={"text": post},
