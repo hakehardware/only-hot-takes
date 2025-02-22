@@ -1,6 +1,7 @@
 import requests
 from xauth import XAuth
 
+
 class X:
     def __init__(self):
         self.xauth = XAuth()
@@ -20,5 +21,5 @@ class X:
                 "Content-Type": "application/json",
             },
         )
-        
+
         return response

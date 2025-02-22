@@ -7,12 +7,13 @@ from requests_oauthlib import OAuth2Session
 from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 from flask import Flask, request, redirect, session
-from db import DB 
+from db import DB
 
-X_REDIRECT_URI="http://127.0.0.1:5000/oauth/callback"
+X_REDIRECT_URI = "http://127.0.0.1:5000/oauth/callback"
 X_AUTH_URL = "https://twitter.com/i/oauth2/authorize"
 X_TOKEN_URL = "https://api.x.com/2/oauth2/token"
 X_SCOPES = ["tweet.read", "users.read", "tweet.write", "offline.access"]
+
 
 class XAuth:
     def __init__(self):
@@ -42,15 +43,17 @@ class XAuth:
             redirect_uri=self.redirect_uri,
             scope=self.scopes
         )
-    
+
     def _generate_pkce(self):
         """Generate PKCE code verifier and challenge."""
-        code_verifier = base64.urlsafe_b64encode(os.urandom(30)).decode("utf-8")
+        code_verifier = base64.urlsafe_b64encode(os.urandom(30))\
+            .decode("utf-8")
         code_verifier = re.sub("[^a-zA-Z0-9]+", "", code_verifier)
         code_challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
-        code_challenge = base64.urlsafe_b64encode(code_challenge).decode("utf-8").replace("=", "")
+        code_challenge = base64.urlsafe_b64encode(code_challenge)\
+            .decode("utf-8").replace("=", "")
         return code_verifier, code_challenge
-    
+
     def _setup_routes(self):
         """Set up Flask routes for authentication."""
         @self.app.route("/")
@@ -65,7 +68,7 @@ class XAuth:
             session["oauth_state"] = state
             session["code_verifier"] = code_verifier
             return redirect(authorization_url)
-        
+
         @self.app.route("/oauth/callback")
         def auth_callback():
             code = request.args.get("code")
@@ -86,8 +89,9 @@ class XAuth:
             # Store token in database
             self.db.store_token(token)
 
-            return "Authentication successful! Token stored in the database.", 200
-        
+            return "Authentication successful! Token stored in the database.",
+        200
+
     def start_auth_server(self):
         """Start the Flask server for authentication."""
         print("Starting auth server at http://localhost:5000")
@@ -114,11 +118,12 @@ class XAuth:
         # Store updated token
         self.db.store_token(token)
         return token
-    
+
     def get_access_token(self):
-        """Get a valid access token, refreshing if expired or initializing if missing."""
+        """Get a valid access token, refreshing if expired or initializing \
+            if missing."""
         token = self.db.get_token()
-        
+
         if not token:
             print("No token found in the database. Starting authentication...")
             self.start_auth_server()
@@ -133,3 +138,7 @@ class XAuth:
     def is_token_valid(self):
         """Check if the current token is valid."""
         return self.db.is_token_valid()
+
+
+if __name__ == "__main__":
+    xauth = XAuth()
