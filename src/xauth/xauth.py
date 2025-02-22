@@ -7,7 +7,7 @@ from requests_oauthlib import OAuth2Session
 from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 from flask import Flask, request, redirect, session
-from db import DB
+from src.db.db import DB
 
 X_REDIRECT_URI = "http://localhost:5000/oauth/callback"
 X_AUTH_URL = "https://twitter.com/i/oauth2/authorize"

@@ -1,5 +1,5 @@
 import requests
-from xauth import XAuth
+from src.xauth.xauth import XAuth
 
 
 class X:
