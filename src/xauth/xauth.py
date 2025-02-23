@@ -3,134 +3,150 @@ import time
 import base64
 import hashlib
 import re
+import multiprocessing
+from threading import Timer
 from requests_oauthlib import OAuth2Session
 from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 from flask import Flask, request, redirect, session
+from werkzeug.serving import run_simple
 from src.db.db import DB
-from logger import logger
+from src.logger import logger
 
-FLASK_PORT = 5000
-X_REDIRECT_URI = f"http://localhost:{FLASK_PORT}/oauth/callback" # Must be set in X Developer Console
+# Constants for configuration
+FLASK_PORT = 5001
+X_REDIRECT_URI = f"http://localhost:{FLASK_PORT}/oauth/callback"  # Must be set in X Developer Console
 X_AUTH_URL = "https://twitter.com/i/oauth2/authorize"
 X_TOKEN_URL = "https://api.x.com/2/oauth2/token"
 X_SCOPES = ["tweet.read", "users.read", "tweet.write", "offline.access"]
 
+def run_token_server(q: multiprocessing.Queue,
+                     client_id: str,
+                     client_secret: str,
+                     redirect_uri: str,
+                     auth_url: str,
+                     token_url: str,
+                     scopes: list,
+                     port: int) -> None:
+    """Run a minimal Flask server that captures the token and puts it on a queue."""
+    app = Flask(__name__)
+    app.secret_key = os.urandom(50)
+
+    def _generate_pkce():
+        """Generate a PKCE code verifier and challenge."""
+        code_verifier = base64.urlsafe_b64encode(os.urandom(30)).decode("utf-8")
+        code_verifier = re.sub(r"[^a-zA-Z0-9]+", "", code_verifier)
+        challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
+        code_challenge = base64.urlsafe_b64encode(challenge).decode("utf-8").replace("=", "")
+        return code_verifier, code_challenge
+
+    @app.route("/")
+    def auth_start():
+        oauth = OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scopes)
+        code_verifier, code_challenge = _generate_pkce()
+        authorization_url, state = oauth.authorization_url(
+            auth_url,
+            code_challenge=code_challenge,
+            code_challenge_method="S256"
+        )
+        # Store PKCE values in session
+        session["oauth_state"] = state
+        session["code_verifier"] = code_verifier
+        return redirect(authorization_url)
+
+    @app.route("/oauth/callback")
+    def auth_callback():
+        code = request.args.get("code")
+        if not code:
+            return "Error: No code provided", 400
+
+        oauth = OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scopes)
+        token = oauth.fetch_token(
+            token_url,
+            client_secret=client_secret,
+            code_verifier=session.get("code_verifier"),
+            code=code
+        )
+        token["expires_at"] = time.time() + token["expires_in"]
+
+        # Put the token on the queue so the main process can receive it.
+        q.put(token)
+
+        # Return a response first so the browser sees a success message.
+        response = "Authentication successful! You can now close this window."
+        
+        # Schedule a delayed shutdown of the server to allow the response to be sent.
+        Timer(1.0, lambda: os._exit(0)).start()
+        return response, 200
+
+    run_simple("localhost", port, app)
 
 class XAuth:
     def __init__(self):
-        # Load environment variables
         load_dotenv()
-        self.access_token = os.getenv("X_CLIENT_ID")
-        self.secret = os.getenv("X_APP_SECRET")
+        self.client_id = os.getenv("X_CLIENT_ID")
+        self.client_secret = os.getenv("X_APP_SECRET")
         self.redirect_uri = X_REDIRECT_URI
 
-        # X API endpoints and scopes
         self.auth_url = X_AUTH_URL
         self.token_url = X_TOKEN_URL
         self.scopes = X_SCOPES
 
-        # Initialize the database
         self.db = DB()
 
-        # Flask app for initial auth callback
-        self.app = Flask(__name__)
-        self.app.secret_key = os.urandom(50)
-        self._setup_routes()
-
     def _make_oauth_session(self):
-        """Create an OAuth2Session instance."""
         return OAuth2Session(
-            client_id=self.access_token,
+            client_id=self.client_id,
             redirect_uri=self.redirect_uri,
             scope=self.scopes
         )
 
-    def _generate_pkce(self):
-        """Generate PKCE code verifier and challenge."""
-        code_verifier = base64.urlsafe_b64encode(os.urandom(30))\
-            .decode("utf-8")
-        code_verifier = re.sub("[^a-zA-Z0-9]+", "", code_verifier)
-        code_challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
-        code_challenge = base64.urlsafe_b64encode(code_challenge)\
-            .decode("utf-8").replace("=", "")
-        return code_verifier, code_challenge
-
-    def _setup_routes(self):
-        """Set up Flask routes for authentication."""
-        @self.app.route("/")
-        def auth_start():
-            oauth = self._make_oauth_session()
-            code_verifier, code_challenge = self._generate_pkce()
-            authorization_url, state = oauth.authorization_url(
-                self.auth_url,
-                code_challenge=code_challenge,
-                code_challenge_method="S256"
-            )
-            session["oauth_state"] = state
-            session["code_verifier"] = code_verifier
-            return redirect(authorization_url)
-
-        @self.app.route("/oauth/callback")
-        def auth_callback():
-            code = request.args.get("code")
-            if not code:
-                return "Error: No code provided", 400
-
-            oauth = self._make_oauth_session()
-            token = oauth.fetch_token(
-                self.token_url,
-                client_secret=self.secret,
-                code_verifier=session["code_verifier"],
-                code=code
-            )
-
-            # Add expiration timestamp
-            token["expires_at"] = time.time() + token["expires_in"]
-
-            # Store token in database
-            self.db.store_token(token)
-
-            return "Authentication successful! Token stored in the database.",
-        200
-
-    def start_auth_server(self):
-        """Start the Flask server for authentication."""
-        print(f"Visit http://localhost:{FLASK_PORT} to authorize your app.")
-        self.app.run(host="0.0.0.0", port=FLASK_PORT)
-
     def _refresh_token(self):
-        """Refresh the token using the stored refresh token."""
         refresh_token = self.db.get_refresh_token()
         if not refresh_token:
-            logger.info("No refresh token found. User needs to \
-                        re-authenticate.")
+            logger.info("No refresh token found. User needs to re-authenticate.")
             return None
 
         oauth = self._make_oauth_session()
-        oauth.auth = HTTPBasicAuth(self.access_token, self.secret)
+        oauth.auth = HTTPBasicAuth(self.client_id, self.client_secret)
         token = oauth.refresh_token(
             token_url=self.token_url,
             refresh_token=refresh_token
         )
-
-        # Add expiration timestamp
         token["expires_at"] = time.time() + token["expires_in"]
-
-        # Store updated token
         self.db.store_token(token)
         return token
 
     def get_access_token(self):
-        """Get a valid access token, refreshing if expired or initializing \
-            if missing."""
+        """
+        Get a valid access token. If no token is stored, start the token server
+        in a separate process to capture the token from the OAuth callback.
+        """
         token = self.db.get_token()
-
         if not token:
-            logger.info("No token found in the database. \
-                        Starting authentication...")
-            self.start_auth_server()
-            return None  # User must complete authentication in the browser
+            logger.info("No token found. Starting authentication using multiprocessing...")
+            q = multiprocessing.Queue()
+            p = multiprocessing.Process(
+                target=run_token_server,
+                args=(
+                    q,
+                    self.client_id,
+                    self.client_secret,
+                    self.redirect_uri,
+                    self.auth_url,
+                    self.token_url,
+                    self.scopes,
+                    FLASK_PORT
+                )
+            )
+            p.start()
+            print(f"Visit http://localhost:{FLASK_PORT} to authorize your app.")
+            token = q.get(block=True)
+            # Delay termination in the main process to ensure the browser receives the response.
+            time.sleep(2)
+            p.terminate()
+            self.db.store_token(token)
+            return token["access_token"]
 
         if time.time() >= token.get("expires_at", 0):
             logger.info("Token expired. Refreshing...")
@@ -139,5 +155,4 @@ class XAuth:
         return token["access_token"] if token else None
 
     def is_token_valid(self):
-        """Check if the current token is valid."""
         return self.db.is_token_valid()
