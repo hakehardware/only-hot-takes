@@ -21,8 +21,8 @@ class XAuth:
     def __init__(self):
         # Load environment variables
         load_dotenv()
-        self.access_token = os.getenv("X_ACCESS_TOKEN")
-        self.secret = os.getenv("X_SECRET")
+        self.access_token = os.getenv("X_CLIENT_ID")
+        self.secret = os.getenv("X_APP_SECRET")
         self.redirect_uri = X_REDIRECT_URI
 
         # X API endpoints and scopes
