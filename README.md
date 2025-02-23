@@ -65,8 +65,8 @@ cp .env.example .env
 Edit the `.env` file and add your X API credentials:
 
 ```ini
-X_ACCESS_TOKEN="YOUR APP'S ACCESS TOKEN"
-X_SECRET="YOUR APP'S SECRET"
+X_CLIENT_ID="YOUR APP'S CLIENT ID"
+X_APP_SECRET="YOUR APP'S SECRET"
 ```
 
 You must also set the callback URL to be `http://localhost:5000/oauth/callback`
