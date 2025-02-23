@@ -15,7 +15,7 @@ class X:
         if not access_token:
             logger.info("Initial auth in progress. \
                         Complete it in your browser.")
-            access_token = self.xauth.get_access_token()
+            return "Not Authorized"
 
         response = requests.post(
             "https://api.x.com/2/tweets",

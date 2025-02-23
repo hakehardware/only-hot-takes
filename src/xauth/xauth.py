@@ -10,8 +10,8 @@ from flask import Flask, request, redirect, session
 from src.db.db import DB
 from logger import logger
 
-
-X_REDIRECT_URI = "http://localhost:5000/oauth/callback"
+FLASK_PORT = 5000
+X_REDIRECT_URI = f"http://localhost:{FLASK_PORT}/oauth/callback" # Must be set in X Developer Console
 X_AUTH_URL = "https://twitter.com/i/oauth2/authorize"
 X_TOKEN_URL = "https://api.x.com/2/oauth2/token"
 X_SCOPES = ["tweet.read", "users.read", "tweet.write", "offline.access"]
@@ -96,8 +96,8 @@ class XAuth:
 
     def start_auth_server(self):
         """Start the Flask server for authentication."""
-        print("Visit http://localhost:5000 to authorize your app.")
-        self.app.run(host="0.0.0.0", port=5000)
+        print(f"Visit http://localhost:{FLASK_PORT} to authorize your app.")
+        self.app.run(host="0.0.0.0", port=FLASK_PORT)
 
     def _refresh_token(self):
         """Refresh the token using the stored refresh token."""
