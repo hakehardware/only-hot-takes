@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 from src.ai.ai import AI
 import random
 from src.xapi.xapi import X
+import schedule
+import time
 
 load_dotenv()
 
@@ -33,10 +35,7 @@ TONES = [
     "menacing"
 ]
 
-if __name__ == "__main__":
-    open_ai = AI(OPEN_AI_MODEL, SYSTEM_PROMPT, OPEN_AI_BASE_URL, OPEN_AI_API_KEY)
-    x = X()
-
+def generate_hot_take():
     temperature=random.uniform(0.9, 1.1)
     tone = random.choice(TONES)
 
@@ -44,7 +43,16 @@ if __name__ == "__main__":
         "Produce a single scorching hot take under 280 characters.\n"
         f"Make it edgy, fun, and a bit controversial—something {tone} that defies convention and sparks debate while keeping a playful twist."
     )
-
     response = open_ai.query_ai(prompt, temperature, 5000)
     response.replace('"', '')
     response = x.create_post(response)
+
+if __name__ == "__main__":
+    open_ai = AI(OPEN_AI_MODEL, SYSTEM_PROMPT, OPEN_AI_BASE_URL, OPEN_AI_API_KEY)
+    x = X()
+
+    schedule.every(120).minutes.do(generate_hot_take)
+    print("Starting schedule loop")
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
