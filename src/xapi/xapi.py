@@ -11,8 +11,6 @@ class X:
         logger.debug("Posting!")
         access_token = self.xauth.get_access_token()
 
-        print(f"Posting to X: {post}")
-
         response = requests.post(
             "https://api.x.com/2/tweets",
             json={"text": post},
