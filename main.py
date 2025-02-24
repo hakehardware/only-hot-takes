@@ -48,7 +48,7 @@ def generate_hot_take(open_ai):
     response = x.create_post(response)
 
 if __name__ == "__main__":
-    open_ai = AI(XAI_MODEL, SYSTEM_PROMPT, XAI_BASE_URL, XAI_API_KEY)
+    open_ai = AI(OPEN_AI_MODEL, SYSTEM_PROMPT, OPEN_AI_BASE_URL, OPEN_AI_API_KEY)
     x = X()
 
     schedule.every(120).minutes.do(generate_hot_take)
