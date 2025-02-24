@@ -115,15 +115,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # open_ai = AI(OPEN_AI_MODEL, SYSTEM_PROMPT, OPEN_AI_BASE_URL, OPEN_AI_API_KEY)
-    # x = X()
-
-    # schedule.every(120).minutes.do(generate_hot_take)
-    # print("Starting schedule loop")
-
-    # # Run Once Initially
-    # generate_hot_take(open_ai)
-
-    # while True:
-    #     schedule.run_pending()
-    #     time.sleep(60)
